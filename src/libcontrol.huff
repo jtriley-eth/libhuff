@@ -1,0 +1,205 @@
+// -------------------------------------------------------------------------------------------------
+// Control Flow Library
+
+// TODO: ask team if `macro{ <expr>* }` should be a valid macro in the future
+
+/// ## While Loop
+///
+/// Loop where condition is checked and body is executed if condition is truthy.
+///
+/// ### Arguments
+///
+/// - `condition`: expression that resolves to a truthy or falsy value.
+/// - `body`: expression that is evaluated if `condition` resolves to a truthy value.
+///
+/// ### Panics
+///
+/// - if `condition` does not resolve to at least single value on the stack.
+/// - if `body` panics.
+///
+/// ### Usage
+///
+/// ```huff
+/// #include "libcontrol.huff";
+///
+/// #define macro APPEND_SLOT() = takes (0) returns (0) {
+///     0x01 msize mstore
+/// }
+///
+/// #define macro MEM_NOT_TOO_BIG() = takes (0) returns (1) {
+///     0x100 msize lt
+/// }
+///
+/// #define macro MAIN() = takes (0) returns (0) {
+///     WHILE(MEM_NOT_TOO_BIG, APPEND_SLOT)
+///     stop
+/// }
+/// ```
+#define macro WHILE(<condition>, <body>) = takes (0) returns (0) {
+    start_loop:         // []
+        <condition>     // [should_containue]
+        iszero          // [should_exit]
+        exit_loop       // [exit_loop_dest, should_exit]
+        jumpi           // []
+        <body>          // []
+        start_loop      // [start_loop_dest]
+        jump            // []
+    exit_loop:          // []
+}
+
+/// ## Do-While Loop
+///
+/// Loop where body is executed before checking if loop should continue.
+///
+/// ### Arguments
+///
+/// - `body`: expression that is evaluated if `condition` resolves to a truthy value.
+/// - `condition`: expression that resolves to a truthy or falsy value.
+///
+/// ### Panics
+///
+/// - if `condition` does not resolve to at least single value on the stack.
+/// - if `body` panics.
+///
+/// ### Usage
+///
+/// ```huff
+/// #include "libcontrol.huff";
+///
+/// #define macro APPEND_SLOT() = takes (0) returns (0) {
+///     0x01 msize mstore
+/// }
+///
+/// #define macro MEM_NOT_TOO_BIG() = takes (0) returns (1) {
+///     0x100 msize lt
+/// }
+///
+/// #define macro MAIN() = takes (0) returns (0) {
+///     DO_WHILE(APPEND_SLOT, MEM_NOT_TOO_BIG)
+///     stop
+/// }
+/// ```
+#define macro DO_WHILE(<body>, <condition>) = takes (0) returns (0) {
+    start_loop:         // []
+        <body>          // []
+        <condition>     // [should_continue]
+        start_loop      // [start_loop_dest, should_continue]
+        jumpi           // []
+}
+
+/// ## If Expression
+///
+/// Conditional where the body expression is evaluated if the condition resolves to a truthy value.
+///
+/// ### Arguments
+///
+/// - `condition`: expression that resolves to a truthy or falsy value.
+/// - `body`: expression that is evaludated if `condition` resolves to a truthy value.
+///
+/// ### Panics
+/// ```huff
+/// #include "libcontrol.huff";
+///
+/// #define macro HAS_CALLDATA() = takes (0) returns (1) {
+///     calldatasize iszero
+/// }
+///
+/// #define macro RETURN_CALLDATA() = takes (0) returns (1) {
+///     0x00 0x00 calldatasize calldatacopy
+///     calldatasize 0x00 return
+/// }
+///
+/// #define macro MAIN() = takes (0) returns (0) {
+///     IF(HAS_CALLDATA, RETURN_CALLDATA)
+///     0x00 0x00 revert
+/// }
+/// ```
+#define macro IF(<condition>, <body>) = takes (0) returns (0) {
+    <condition>         // [condition]
+    end_if              // [end_if_dest, should_pass]
+    <body>              // []
+    end_if:
+}
+
+/// ## Ternary Expression
+///
+/// ### Arguments
+///
+/// - `condition`: expression that resolves to a truthy or falsy value.
+/// - `truthy_expr`: expression that is evaluated if `condition` resolves to a truthy value.
+/// - `falsy_expr`: expression that is evaluated if `condition` resolves to a falsy value.
+///
+/// ### Panics
+///
+/// - if `condition` does not resolve to at least single value on the stack.
+/// - if `condition` resolves to a truthy value and `truthy_expr` panics.
+/// - if `condition` resolves to a falsy value and `falsy_expr` panics.
+///
+/// ### Usage
+///
+/// ```huff
+/// #define macro TRY_PROXY() = takes (0) returns (1) {
+///     0x00 0x00 0x00 0x00 [IMPL] gas delegatecall
+///     0x00 0x00 returndatasize returndatacopy
+/// }
+///
+/// #define macro MAIN() = takes (0) returns (0) {
+///     TERNARY(TRY_PROXY, return, revert)
+/// }
+/// ```
+#define macro TERNARY(<condition>, <truthy_expr>, <falsy_expr>) = takes (0) returns (0) {
+    <condition>         // [condition]
+    truthy              // [truthy_dest, condition]
+    jumpi               // []
+        <falsy_expr>    // []
+        end_ternary     // [end_ternary_dest]
+        jump            // []
+    truthy:             // []
+        <truthy_expr>   // []
+    end_ternary:        // []
+}
+
+/// ## Branchless Ternary Expression 
+///
+/// ### Arguments
+///
+/// - `condition`: expression that resolves to a truthy or falsy value.
+/// - `truthy_expr`: expression that is evaluated if `condition` resolves to a truthy value.
+/// - `falsy_expr`: expression that is evaluated if `condition` resolves to a falsy value.
+///
+/// ### Panics
+///
+/// - if `condition` does not resolve to at least single value on the stack.
+/// - if `condition` resolves to a truthy value and `truthy_expr` panics.
+/// - if `condition` resolves to a truthy value and `truthy_expr` does not resolve to at least a
+///     single value to the stack.
+/// - if `condition` resolves to a falsy value and `falsy_expr` panics.
+/// - if `condition` resolves to a falsy value and `falsy_expr` does not resolve to at least a
+///     single value to the stack.
+///
+/// ### Usage
+///
+/// ```huff
+/// #define macro TRY_PROXY() = takes (0) returns (1) {
+///     0x00 0x00 0x00 0x00 [IMPL] gas delegatecall
+///     0x00 0x00 returndatasize returndatacopy
+/// }
+///
+/// #define macro MAIN() = takes (0) returns (0) {
+///     TERNARY(TRY_PROXY, 0x01, 0x00)
+///     0x00 mstore
+///     0x20 0x00 return
+/// }
+/// ```
+#define macro BRANCHLESS_TERNARY(<condition>, <truthy_expr>, <falsy_expr>) = takes (0) returns (1) {
+    <condition>         // [condition]
+    iszero              // [inverse]
+    dup1                // [inverse, inverse]
+    iszero              // [condition, inverse]
+    <truthy_expr>       // [truthy, condition, inverse]
+    mul                 // [truth_value, inverse]
+    swap1               // [inverse, truth_value]
+    <falsy_expr>        // [falsy, inverse, truth_value]
+    mul                 // [falsy_value, truthy_value]
+    add                 // [value]
+}

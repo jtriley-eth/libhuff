@@ -1,4 +1,7 @@
-// Transfer Library
+//  ------------------------------------------------------------------------------------------------
+//! # Transfer Library
+//!
+//! Provides transfer utilities.
 
 #define constant TRANSFER_SELECTOR = 0xa9059cbb;
 #define constant TRANSFER_FAIL = 0x9c9e641c;

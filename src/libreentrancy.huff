@@ -1,5 +1,7 @@
-// -------------------------------------------------------------------------------------------------
-// Reentrancy Library
+//  ------------------------------------------------------------------------------------------------
+//! # Reentrancy Library
+//!
+//! Provides reentrancy prevention by wrapping other macros in a reentrancy guard.
 
 /// ## Reentrancy Guard Slot
 ///

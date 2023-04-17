@@ -1,8 +1,6 @@
 // -------------------------------------------------------------------------------------------------
 // Control Flow Library
 
-// TODO: ask team if `macro{ <expr>* }` should be a valid macro in the future
-
 /// ## While Loop
 ///
 /// Loop where condition is checked and body is executed if condition is truthy.

@@ -3,6 +3,36 @@
 #define constant TRANSFER_SELECTOR = 0xa9059cbb;
 #define constant TRANSFER_FAIL = 0x9c9e641c;
 
+/// ## Transfer Helper
+///
+/// Transfers a given token using the next free memory pointer.
+///
+/// ### Template Arguments
+///
+/// - `token`: token address to transfer.
+/// - `free_mem_ptr`: pointer to free memory (requires at least 68 bytes of memory following it).
+///
+/// ### Stack Arguments
+///
+/// - `receiver`: (`stack[0]`) receiver address.
+/// - `amount`: (`stack[1]`) amount to transfer.
+///
+/// ### Panics
+///
+/// - if `token` fails
+/// - if `token` returns data and that data is zero
+///
+/// ### Usage
+///
+/// ```huff
+/// #include "libtransfer.huff"
+///
+/// #define macro MAIN() = takes (0) returns (0) {
+///     0x01 caller
+///     TRANSFER([USDC], 0x00)
+///     stop
+/// }
+/// ```
 #define macro TRANSFER(<token>, <free_mem_ptr>) = takes (2) returns (0) {
     // takes:               // [receiver, amount]
     <free_mem_ptr> 0x24 add // [amount_ptr, receiver, amount]

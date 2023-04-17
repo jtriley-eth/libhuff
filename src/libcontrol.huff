@@ -7,7 +7,7 @@
 ///
 /// Loop where condition is checked and body is executed if condition is truthy.
 ///
-/// ### Arguments
+/// ### Template Arguments
 ///
 /// - `condition`: expression that resolves to a truthy or falsy value.
 /// - `body`: expression that is evaluated if `condition` resolves to a truthy value.
@@ -51,7 +51,7 @@
 ///
 /// Loop where body is executed before checking if loop should continue.
 ///
-/// ### Arguments
+/// ### Template Arguments
 ///
 /// - `body`: expression that is evaluated if `condition` resolves to a truthy value.
 /// - `condition`: expression that resolves to a truthy or falsy value.
@@ -91,12 +91,18 @@
 ///
 /// Conditional where the body expression is evaluated if the condition resolves to a truthy value.
 ///
-/// ### Arguments
+/// ### Template Arguments
 ///
 /// - `condition`: expression that resolves to a truthy or falsy value.
 /// - `body`: expression that is evaludated if `condition` resolves to a truthy value.
 ///
 /// ### Panics
+///
+/// - if `condition` does not resolve to at least single value on the stack.
+/// - if `body` panics.
+///
+/// ### Usage
+///
 /// ```huff
 /// #include "libcontrol.huff";
 ///
@@ -123,7 +129,7 @@
 
 /// ## Ternary Expression
 ///
-/// ### Arguments
+/// ### Template Arguments
 ///
 /// - `condition`: expression that resolves to a truthy or falsy value.
 /// - `truthy_expr`: expression that is evaluated if `condition` resolves to a truthy value.
@@ -138,6 +144,8 @@
 /// ### Usage
 ///
 /// ```huff
+/// #include "libcontrol.huff";
+///
 /// #define macro TRY_PROXY() = takes (0) returns (1) {
 ///     0x00 0x00 0x00 0x00 [IMPL] gas delegatecall
 ///     0x00 0x00 returndatasize returndatacopy
@@ -161,7 +169,7 @@
 
 /// ## Branchless Ternary Expression 
 ///
-/// ### Arguments
+/// ### Template Arguments
 ///
 /// - `condition`: expression that resolves to a truthy or falsy value.
 /// - `truthy_expr`: expression that is evaluated if `condition` resolves to a truthy value.
@@ -180,6 +188,8 @@
 /// ### Usage
 ///
 /// ```huff
+/// #include "libcontrol.huff";
+///
 /// #define macro TRY_PROXY() = takes (0) returns (1) {
 ///     0x00 0x00 0x00 0x00 [IMPL] gas delegatecall
 ///     0x00 0x00 returndatasize returndatacopy

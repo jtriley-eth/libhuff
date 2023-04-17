@@ -1,0 +1,9 @@
+[package]
+name = "huffgen"
+version = "0.1.0"
+edition = "2021"
+authors = ["jtriley.eth"]
+
+[[bin]]
+name = "huffgen"
+path = "codegen/main.rs"

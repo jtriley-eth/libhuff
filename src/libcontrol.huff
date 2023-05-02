@@ -35,7 +35,7 @@
 ///     stop
 /// }
 /// ```
-#define macro WHILE(<condition>, <body>) = takes (0) returns (0) {
+#define macro WHILE(condition, body) = takes (0) returns (0) {
     start_loop:         // []
         <condition>     // [should_containue]
         iszero          // [should_exit]
@@ -79,7 +79,7 @@
 ///     stop
 /// }
 /// ```
-#define macro DO_WHILE(<body>, <condition>) = takes (0) returns (0) {
+#define macro DO_WHILE(body, condition) = takes (0) returns (0) {
     start_loop:         // []
         <body>          // []
         <condition>     // [should_continue]
@@ -120,7 +120,7 @@
 ///     0x00 0x00 revert
 /// }
 /// ```
-#define macro IF(<condition>, <body>) = takes (0) returns (0) {
+#define macro IF(condition, body) = takes (0) returns (0) {
     <condition>         // [condition]
     end_if              // [end_if_dest, should_pass]
     <body>              // []
@@ -155,7 +155,7 @@
 ///     TERNARY(TRY_PROXY, return, revert)
 /// }
 /// ```
-#define macro TERNARY(<condition>, <truthy_expr>, <falsy_expr>) = takes (0) returns (0) {
+#define macro TERNARY(condition, truthy_expr, falsy_expr) = takes (0) returns (0) {
     <condition>         // [condition]
     truthy              // [truthy_dest, condition]
     jumpi               // []
@@ -201,7 +201,7 @@
 ///     0x20 0x00 return
 /// }
 /// ```
-#define macro BRANCHLESS_TERNARY(<condition>, <truthy_expr>, <falsy_expr>) = takes (0) returns (1) {
+#define macro BRANCHLESS_TERNARY(condition, truthy_expr, falsy_expr) = takes (0) returns (1) {
     <condition>         // [condition]
     iszero              // [inverse]
     dup1                // [inverse, inverse]

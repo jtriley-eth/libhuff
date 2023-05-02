@@ -1,0 +1,144 @@
+//  ------------------------------------------------------------------------------------------------
+//! # ERC20 Transfer Library
+//!
+//! Provides transfer utilities.
+
+#define constant TRANSFER_SELECTOR = 0xa9059cbb;
+#define constant TRANSFER_FROM_SELECTOR = 0x23b872dd;
+
+/// ## Transfer Error
+///
+/// Thrown when a transfer fails.
+#define error TransferFail()
+
+/// ## Transfer Helper
+///
+/// Transfers a given token using the next free memory pointer.
+///
+/// > WARNING: Memory from `free_mem_ptr` to `free_mem_ptr + 0x44` will be overwritten.
+///
+/// ### Template Arguments
+///
+/// - `token`: token address to transfer.
+/// - `free_mem_ptr`: pointer to free memory (requires at least 68 bytes of memory following it).
+///
+/// ### Stack Arguments
+///
+/// - `receiver`: (`stack[0]`) receiver address.
+/// - `amount`: (`stack[1]`) amount to transfer.
+///
+/// ### Panics
+///
+/// - if `token` fails
+/// - if `token` returns data and that data is zero
+///
+/// ### Usage
+///
+/// ```huff
+/// #include "libtransfer.huff"
+///
+/// #define macro MAIN() = takes (0) returns (0) {
+///     0x01 caller
+///     TRANSFER([USDC], 0x00)
+///     stop
+/// }
+/// ```
+#define macro ERC20_TRANSFER(token, free_mem_ptr) = takes (2) returns (0) {
+    // takes:               // [receiver, amount]
+    <free_mem_ptr> 0x24 add // [amount_ptr, receiver, amount]
+    swap1                   // [receiver, amount_ptr, amount]
+    <free_mem_ptr> 0x04 add // [receiver_ptr, receiver, amount_ptr, amount]
+    [TRANSFER_SELECTOR]     // [selector, receiver_ptr, receiver, amount_ptr, amount]
+    <free_mem_ptr>          // [selector_ptr, selector, receiver_ptr, receiver, amount_ptr, amount]
+    mstore mstore mstore    // []
+
+    0x20                    // [ret_size]
+    <free_mem_ptr>          // [ret_ptr, ret_size]
+    0x44                    // [arg_size, ret_ptr, ret_size]
+    <free_mem_ptr>          // [arg_ptr, arg_size, ret_ptr, ret_size]
+    0x00                    // [value, arg_ptr, arg_size, ret_ptr, ret_size]
+    <token>                 // [token, value, arg_ptr, arg_size, ret_ptr, ret_size]
+    gas                     // [gas, token, value, arg_ptr, arg_size, ret_ptr, ret_size]
+    call                    // [call_success]
+
+    returndatasize iszero   // [no_ret, call_success]
+    <free_mem_ptr>  mload   // [ret_true, no_ret, call_success]
+    or                      // [token_success, call_success]
+    and                     // [success]
+    success jumpi           // []
+
+    __ERROR(TransferFail)   // [fail]
+    0x00                    // [fail_ptr, fail]
+    mstore                  // []
+    0x00 0x00 revert        // []
+
+    success:                // []
+}
+
+/// ## TransferFrom Helper
+///
+/// Transfers a given token using the next free memory pointer.
+///
+/// > WARNING: Memory from `free_mem_ptr` to `free_mem_ptr + 0x64` will be overwritten.
+///
+/// ### Template Arguments
+///
+/// - `token`: token address to transfer.
+/// - `free_mem_ptr`: pointer to free memory (requires at least 100 bytes of memory following it).
+///
+/// ### Stack Arguments
+///
+/// - `sender`: (`stack[0]`) sender address.
+/// - `receiver`: (`stack[1]`) receiver address.
+/// - `amount`: (`stack[2]`) amount to transfer.
+///
+/// ### Panics
+///
+/// - if `token` fails
+/// - if `token` returns data and that data is zero
+///
+/// ### Usage
+///
+/// ```huff
+/// #include "libtransfer.huff"
+///
+/// #define macro MAIN() = takes (0) returns (0) {
+///     0x01 caller address
+///     TRANSFER([USDC], 0x00)
+///     stop
+/// }
+/// ```
+#define macro ERC20_TRANSFER_FROM(token, free_mem_ptr) = takes (3) returns (0) {
+    // takes:                   // [sender, receiver, amount]
+    <free_mem_ptr> 0x44 add     // [amount_ptr, sender, receiver, amount]
+    swap2                       // [receiver, sender, amount_ptr, amount]
+    swap1                       // [sender, receiver, amount_ptr, amount]
+    <free_mem_ptr> 0x24 add     // [receiver_ptr, sender, receiver, amount_ptr, amount]
+    swap1                       // [sender, receiver_ptr, receiver, amount_ptr, amount]
+    <free_mem_ptr> 0x04 add     // [sender_ptr, sender, receiver_ptr, receiver, amount_ptr, amount]
+    [TRANSFER_FROM_SELECTOR]    // [selector, sender_ptr, sender, receiver_ptr, receiver, amount_ptr, amount]
+    <free_mem_ptr>              // [selector_ptr, selector, sender_ptr, sender, receiver_ptr, receiver, amount_ptr, amount]
+    mstore mstore mstore mstore // []
+
+    0x20                        // [ret_size]
+    <free_mem_ptr>              // [ret_ptr, ret_size]
+    0x64                        // [arg_size, ret_ptr, ret_size]
+    <free_mem_ptr>              // [arg_ptr, arg_size, ret_ptr, ret_size]
+    0x00                        // [value, arg_ptr, arg_size, ret_ptr, ret_size]
+    <token>                     // [token, value, arg_ptr, arg_size, ret_ptr, ret_size]
+    gas                         // [gas, token, value, arg_ptr, arg_size, ret_ptr, ret_size]
+    call                        // [call_success]
+
+    returndatasize iszero       // [no_ret, call_success]
+    <free_mem_ptr>  mload       // [ret_true, no_ret, call_success]
+    or                          // [token_success, call_success]
+    and                         // [success]
+    success jumpi               // []
+
+    __ERROR(TransferFail)       // [fail]
+    0x00                        // [fail_ptr, fail]
+    mstore                      // []
+    0x00 0x00 revert            // []
+
+    success:                    // []
+}

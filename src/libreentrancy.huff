@@ -8,7 +8,7 @@
 /// Custom slot for the contract-level reentrancy guard.
 ///
 /// For reducing codesize, a different slot may be used so long as it does not collide with its
-/// existing storage layout.
+/// existing transient storage layout.
 ///
 /// Derived from `uint256(keccak256(bytes("libhuff.nonreentrant.slot"))) - 1`
 #define macro REENTRANCY_SLOT = 0x356c122056104ddcfeabc3ef4e4e83bab80ed0e287991b1a7f1bea3aa9623c05
@@ -16,11 +16,8 @@
 /// ## Locked and Unlocked States
 ///
 /// Toggled states for the reentrnacy guard.
-///
-/// Due to EVM storage rules (as of Shanghai), toggling between 1 and 2 is more gas efficient than
-/// toggling between 0 and 1.
-#define macro UNLOCKED = 0x01
-#define macro LOCKED = 0x02
+#define constant UNLOCKED = 0x00
+#define constant LOCKED = 0x01
 
 /// ## Reentrant Error
 ///
@@ -31,16 +28,13 @@
 ///
 /// Detects and reverts on contract-level reentrancy.
 ///
-/// > WARNING: The `inner` expression MUST NOT halt execution successfully internally. This WILL
-/// > lock the reentrancy guard forever.
-///
 /// ### Template Arguments
 ///
 /// - `inner`: expression that is evaluated if the reentrancy guard is inactive.
 ///
 /// ### Panics
 ///
-/// - if the value at `REENTRANCY_SLOT` is explicitly `0x02` before execution
+/// - if the value at `REENTRANCY_SLOT` is nonzero before execution
 /// - if `inner` panics
 ///
 /// ### Usage
@@ -60,26 +54,26 @@
 ///     returndatasize 0x00 return
 /// }
 /// ```
-#define macro REENTRANCY_GUARD(<inner>) = takes (0) returns (0) {
-    [UNLOCKED]              // [unlocked]
-    [REENTRANCY_SLOT]       // [slot, unlocked]
-    [LOCKED]                // [locked, slot, unlocked]
-    dup2                    // [slot, locked, slot, unlocked]
-    dup1                    // [slot, slot, locked, slot, unlocked]
-    sload                   // [lock, slot, locked, slot, unlocked]
-    dup3                    // [locked, lock, slot, locked, slot, unlocked]
-    eq                      // [is_locked, slot, locked, slot, unlocked]
-    iszero                  // [is_unlocked, slot, locked, slot, unlocked]
-    unlocked                // [unlocked_dest, is_unlocked, slot, locked, slot, unlocked]
-    jumpi                   // [slot, locked, slot, unlocked]
-        __ERROR(Reentrant)  // [err, slot, locked, slot, unlocked]
-        0x00                // [ptr, err, slot, locked, slot, unlocked]
-        mstore              // [slot, locked, slot, unlocked]
-        0x04                // [err_len, slot, locked, slot, unlocked]
-        0x00                // [ptr, err_len, slot, locked, slot, unlocked]
-        revert              // []
-    unlocked:               // [slot, locked, slot, unlocked]
-        sstore              // [slot, unlocked]
-        <inner>             // [slot, unlocked]
-        sstore              // []
+#define macro REENTRANCY_GUARD(inner) = takes (0) returns (0) {
+    // if tload(slot) != 0 { revert() }
+    // else { tstore(slot, 1); inner; tstore(slot, 0) }
+    [REENTRANCY_SLOT]           // [slot]
+    dup1                        // [slot, slot]
+    dup1                        // [slot, slot, slot]
+    tload                       // [locked, slot, slot]
+    iszero                      // [unlocked, slot, slot]
+    unlocked                    // [unlocked_dst, unlocked, slot, slot]
+    jumpi                       // [slot, slot]
+        _ERROR(reentrant)       // [err, slot, slot]
+        0x00                    // [ptr, err, slot, slot]
+        mstore                  // [slot, slot]
+        0x04                    // [len, slot, slot]
+        0x00                    // [ptr, len, slot, slot]
+        revert                  // []
+    unlocked:                   // [slot, slot]
+        [LOCKED]                // [locked, slot, slot]
+        tstore                  // [slot]
+        <inner>                 // [slot]
+        [UNLOCKED]              // [unlocked, slot]
+        tstore                  // []
 }
